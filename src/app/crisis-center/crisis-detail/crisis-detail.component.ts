@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
+import { DialogService } from 'src/app/dialog.service';
 import { Crisis } from '../crisis';
-import { CrisisService } from '../crisis.service';
 
 @Component({
   selector: 'app-crisis-detail',
@@ -10,21 +10,23 @@ import { CrisisService } from '../crisis.service';
   styleUrls: ['./crisis-detail.component.css'],
 })
 export class CrisisDetailComponent implements OnInit {
-  crisis$?: Observable<Crisis | undefined>;
+  crisis?: Crisis;
+  editName?: string;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private service: CrisisService
+    private dialogService: DialogService
   ) {}
 
   ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id');
-
-    this.crisis$ = this.service.getCrisis(id);
+    this.route.data.subscribe((data: { crisis?: Crisis }) => {
+      this.editName = data.crisis?.name;
+      this.crisis = data.crisis;
+    });
   }
 
-  gotoCrises(crisis: Crisis) {
+  gotoCrises(crisis?: Crisis) {
     const crisisId = crisis ? crisis.id : null;
     // Pass along the crisis id if available
     // so that the CrisisList component can select that crisis.
@@ -33,5 +35,24 @@ export class CrisisDetailComponent implements OnInit {
     this.router.navigate(['../', { id: crisisId, foo: 'foo' }], {
       relativeTo: this.route,
     });
+  }
+
+  cancel() {
+    this.gotoCrises();
+  }
+
+  save() {
+    if (this.crisis && this.editName) this.crisis.name = this.editName;
+    this.gotoCrises();
+  }
+
+  canDeactivate(): Observable<boolean> | boolean {
+    // Allow synchronous navigation (`true`) if no crisis or the crisis is unchanged
+    if (!this.crisis || this.crisis.name === this.editName) {
+      return true;
+    }
+    // Otherwise ask the user with the dialog service and return its
+    // observable which resolves to true or false when the user decides
+    return this.dialogService.confirm('Discard changes?');
   }
 }
