@@ -4,6 +4,7 @@ import {
   CanActivate,
   CanActivateChild,
   NavigationExtras,
+  Route,
   Router,
   RouterStateSnapshot,
   UrlTree,
@@ -30,6 +31,12 @@ export class AuthGuard implements CanActivate, CanActivateChild {
     state: RouterStateSnapshot
   ): true | UrlTree {
     return this.canActivate(route, state);
+  }
+
+  canLoad(route: Route): true | UrlTree {
+    const url = `/${route.path}`;
+
+    return this.checkLogin(url);
   }
 
   checkLogin(url: string): true | UrlTree {
